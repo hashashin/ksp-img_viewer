@@ -1,5 +1,5 @@
 ﻿// -------------------------------------------------------------------------------------------------
-// img_viewer.cs 0.0.1
+// img_viewer.cs 0.2
 //
 // Simple KSP plugin to take img_viewer ingame.
 // Copyright (C) 2014 Iván Atienza
@@ -15,17 +15,16 @@
 // GNU General Public License for more details.
 //
 // You should have received a copy of the GNU General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/. 
-// 
+// along with this program.  If not, see http://www.gnu.org/licenses/.
+//
 // Email: mecagoenbush at gmail dot com
 // Freenode: hashashin
 //
 // -------------------------------------------------------------------------------------------------
 
-
+using KSP.IO;
 using System.Collections.Generic;
 using System.IO;
-using KSP.IO;
 using System.Reflection;
 using UnityEngine;
 using File = KSP.IO.File;
@@ -36,7 +35,7 @@ namespace img_viewer
     public class ImgViewer : MonoBehaviour
     {
         private Rect _windowRect;
-        private Rect _windowRect2 = new Rect(Screen.width/2 - 150f, Screen.height/2 - 75f, 260f, 390f);
+        private Rect _windowRect2 = new Rect(Screen.width / 2 - 150f, Screen.height / 2 - 75f, 260f, 390f);
 
         private string _keybind;
 
@@ -50,22 +49,23 @@ namespace img_viewer
 
         private string _version;
         private string _versionlastrun;
+        private Texture2D _image;
 
         private WWW _imagetex;
         private string _imagefile;
 
         private readonly string _imageurl = "file://" + KSPUtil.ApplicationRootPath.Replace("\\", "/") +
-                                   "/GameData/img_viewer/Images/";
+                                   "/GameData/img_viewer/Plugins/PluginData/Images/";
 
         private readonly string _imagedir = KSPUtil.ApplicationRootPath.Replace("\\", "/") +
-                                   "/GameData/img_viewer/Images/";
+                                   "/GameData/img_viewer/Plugins/PluginData/Images/";
 
         private List<string> _imageList;
         private Vector2 _scrollViewVector = Vector2.zero;
         private int _selectionGridInt;
         private bool _showList;
         private bool _useKSPskin;
-
+        private int _lastimg = -1;
 
         private void Awake()
         {
@@ -76,10 +76,12 @@ namespace img_viewer
 
         private void Start()
         {
+            //populate the list of images
             if (_imageList == null)
             {
                 GetImages();
             }
+            // toolbar stuff
             if (!ToolbarManager.ToolbarAvailable) return;
             _button = ToolbarManager.Instance.add("img_viewer", "toggle");
             _button.TexturePath = _btextureOff;
@@ -110,16 +112,10 @@ namespace img_viewer
 
         private void IvWindow(int windowID)
         {
-            _imagefile = _imageList[_selectionGridInt];
-            _imagetex = new WWW(_imageurl + _imagefile);
-            Texture2D _image = _imagetex.texture;
             _windowRect = new Rect(_windowRect.xMin, _windowRect.yMin, _image.width, _image.height + 20f);
             GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
-            // Unity don't manage textures mem very well so:
-            Destroy(_image);
-            _imagetex.Dispose();
 
-           if (GUI.Button(new Rect(2f, 2f, 13f, 13f), "X"))
+            if (GUI.Button(new Rect(2f, 2f, 13f, 13f), "X"))
             {
                 Toggle();
             }
@@ -130,8 +126,8 @@ namespace img_viewer
         {
             // Notes list gui.
             _scrollViewVector = GUI.BeginScrollView(new Rect(3f, 25f, 255f, 300f), _scrollViewVector,
-                new Rect(0f, 0f, 0f, 25f*(_imageList.Count + 5)));
-            var _options = new[] {GUILayout.Width(225f), GUILayout.ExpandWidth(false)};
+                new Rect(0f, 0f, 0f, 25f * (_imageList.Count + 5)));
+            var _options = new[] { GUILayout.Width(225f), GUILayout.ExpandWidth(false) };
             _selectionGridInt = GUILayout.SelectionGrid(_selectionGridInt, _imageList.ToArray(), 1, _options);
             GUI.EndScrollView();
             // Refresh images list.
@@ -158,6 +154,13 @@ namespace img_viewer
             {
                 _showList = !_showList;
             }
+            if (_lastimg == _selectionGridInt) return;
+            Destroy(_image);
+            _imagefile = _imageList[_selectionGridInt];
+            _imagetex = new WWW(_imageurl + _imagefile);
+            _image = _imagetex.texture;
+            _imagetex.Dispose();
+            _lastimg = _selectionGridInt;
         }
 
         private void GetImages()
@@ -186,7 +189,7 @@ namespace img_viewer
 
             _windowRect = _configfile.GetValue<Rect>("windowpos");
             _windowRect2 = _configfile.GetValue("windowpos2",
-                new Rect(Screen.width/2 - 150f, Screen.height/2 - 75f, 260f, 390f));
+                new Rect(Screen.width / 2 - 150f, Screen.height / 2 - 75f, 260f, 390f));
             _keybind = _configfile.GetValue("keybind", "i");
             _versionlastrun = _configfile.GetValue<string>("version");
             _useKSPskin = _configfile.GetValue("kspskin", false);
@@ -231,9 +234,8 @@ namespace img_viewer
                 _button.TexturePath = _btextureOn;
                 _button.ToolTip = _tooltipOn;
             }
-
         }
-        
+
         private void VersionCheck()
         {
             _version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
@@ -282,7 +284,7 @@ namespace img_viewer
             _option4.OnClick += e => ImagePrev();
             // auto-close popup menu when any option is clicked
             _menu.OnAnyOptionClicked += () => destroyPopupMenu(button);
-            
+
             // hook drawable to button
             button.Drawable = _menu;
         }
