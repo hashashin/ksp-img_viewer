@@ -1,5 +1,5 @@
 ﻿// -------------------------------------------------------------------------------------------------
-// img_viewer.cs 0.2
+// img_viewer.cs 0.2.1
 //
 // Simple KSP plugin to take img_viewer ingame.
 // Copyright (C) 2014 Iván Atienza
@@ -125,16 +125,17 @@ namespace img_viewer
         private void ListWindow(int windowId)
         {
             // Notes list gui.
-            _scrollViewVector = GUI.BeginScrollView(new Rect(3f, 25f, 255f, 300f), _scrollViewVector,
-                new Rect(0f, 0f, 0f, 25f * (_imageList.Count + 5)));
+            _scrollViewVector = GUILayout.BeginScrollView(_scrollViewVector);
             var _options = new[] { GUILayout.Width(225f), GUILayout.ExpandWidth(false) };
             _selectionGridInt = GUILayout.SelectionGrid(_selectionGridInt, _imageList.ToArray(), 1, _options);
-            GUI.EndScrollView();
+            GUILayout.EndScrollView();
             // Refresh images list.
-            if (GUI.Button(new Rect(5f, 330f, 100f, 30f), "Refresh list"))
+            GUI.contentColor = Color.green;
+            if (GUILayout.Button("Refresh list"))
             {
                 GetImages();
             }
+            GUI.contentColor = Color.white;
             // Close the list window.
             if (GUI.Button(new Rect(2f, 2f, 13f, 13f), "X"))
             {
@@ -189,7 +190,7 @@ namespace img_viewer
 
             _windowRect = _configfile.GetValue<Rect>("windowpos");
             _windowRect2 = _configfile.GetValue("windowpos2",
-                new Rect(Screen.width / 2 - 150f, Screen.height / 2 - 75f, 260f, 390f));
+                new Rect(Screen.width / 2 - 150f, Screen.height / 2 - 75f, 270f, 390f));
             _keybind = _configfile.GetValue("keybind", "i");
             _versionlastrun = _configfile.GetValue<string>("version");
             _useKSPskin = _configfile.GetValue("kspskin", false);
