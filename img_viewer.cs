@@ -1,7 +1,7 @@
 ﻿// -------------------------------------------------------------------------------------------------
-// img_viewer.cs 0.2.1
+// img_viewer.cs 0.2.2
 //
-// Simple KSP plugin to take img_viewer ingame.
+// Simple KSP plugin to view images ingame.
 // Copyright (C) 2014 Iván Atienza
 //
 // This program is free software: you can redistribute it and/or modify
@@ -42,8 +42,7 @@ namespace img_viewer
         private bool _visible;
 
         private IButton _button;
-        private const string _tooltipOn = "Hide Image Viewer";
-        private const string _tooltipOff = "Show Image Viewer";
+        private const string _tooltip = "Image Viewer Menu";
         private const string _btextureOn = "img_viewer/Textures/icon_on";
         private const string _btextureOff = "img_viewer/Textures/icon_off";
 
@@ -85,9 +84,8 @@ namespace img_viewer
             if (!ToolbarManager.ToolbarAvailable) return;
             _button = ToolbarManager.Instance.add("img_viewer", "toggle");
             _button.TexturePath = _btextureOff;
-            _button.ToolTip = _tooltipOff;
-            _button.OnClick += (e => Toggle());
-            _button.OnMouseEnter += (e => TogglePopupMenu(_button));
+            _button.ToolTip = _tooltip;
+            _button.OnClick += (e => TogglePopupMenu(_button));
         }
 
         private void OnGUI()
@@ -223,7 +221,6 @@ namespace img_viewer
             {
                 _visible = false;
                 _button.TexturePath = _btextureOff;
-                _button.ToolTip = _tooltipOff;
                 if (_showList)
                 {
                     _showList = false;
@@ -233,7 +230,6 @@ namespace img_viewer
             {
                 _visible = true;
                 _button.TexturePath = _btextureOn;
-                _button.ToolTip = _tooltipOn;
             }
         }
 
@@ -275,14 +271,16 @@ namespace img_viewer
             PopupMenuDrawable _menu = new PopupMenuDrawable();
 
             // create menu options
-            IButton _option1 = _menu.AddOption("Show/hide image list");
-            _option1.OnClick += e => _showList = !_showList;
-            IButton _option2 = _menu.AddOption("Change skin");
-            _option2.OnClick += e => _useKSPskin = !_useKSPskin;
-            IButton _option3 = _menu.AddOption("Next image");
-            _option3.OnClick += e => ImageNext();
-            IButton _option4 = _menu.AddOption("Prev image");
-            _option4.OnClick += e => ImagePrev();
+            IButton _option1 = _menu.AddOption("Show/Hide image");
+            _option1.OnClick += e => Toggle();
+            IButton _option2 = _menu.AddOption("Show/hide image list");
+            _option2.OnClick += e => _showList = !_showList;
+            IButton _option3 = _menu.AddOption("Change skin");
+            _option3.OnClick += e => _useKSPskin = !_useKSPskin;
+            IButton _option4 = _menu.AddOption("Next image");
+            _option4.OnClick += e => ImageNext();
+            IButton _option5 = _menu.AddOption("Prev image");
+            _option5.OnClick += e => ImagePrev();
             // auto-close popup menu when any option is clicked
             _menu.OnAnyOptionClicked += () => destroyPopupMenu(button);
 
