@@ -1,8 +1,8 @@
 ﻿// -------------------------------------------------------------------------------------------------
-// img_viewer.cs 0.2.2
+// img_viewer.cs 0.3
 //
 // Simple KSP plugin to view images ingame.
-// Copyright (C) 2014 Iván Atienza
+// Copyright (C) 2015 Iván Atienza
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 using KSP.IO;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using UnityEngine;
 using File = KSP.IO.File;
@@ -110,9 +111,15 @@ namespace img_viewer
 
         private void IvWindow(int windowID)
         {
-            _windowRect = new Rect(_windowRect.xMin, _windowRect.yMin, _image.width, _image.height + 20f);
-            GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
-
+            if (_image != null)
+            {
+                _windowRect = new Rect(_windowRect.xMin, _windowRect.yMin, _image.width, _image.height + 20f);
+                GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
+            }
+            else
+            {
+                _windowRect = new Rect(Screen.width / 2f, Screen.height / 2f, 100f, 100f);
+            }
             if (GUI.Button(new Rect(2f, 2f, 13f, 13f), "X"))
             {
                 Toggle();
@@ -122,12 +129,30 @@ namespace img_viewer
 
         private void ListWindow(int windowId)
         {
-            // Notes list gui.
-            _scrollViewVector = GUILayout.BeginScrollView(_scrollViewVector);
-            var _options = new[] { GUILayout.Width(225f), GUILayout.ExpandWidth(false) };
-            _selectionGridInt = GUILayout.SelectionGrid(_selectionGridInt, _imageList.ToArray(), 1, _options);
-            GUILayout.EndScrollView();
-            // Refresh images list.
+            if (_imageList != null)
+            {
+                // Notes list gui.
+                _scrollViewVector = GUILayout.BeginScrollView(_scrollViewVector);
+                var _options = new[] { GUILayout.Width(225f), GUILayout.ExpandWidth(false) };
+                _selectionGridInt = GUILayout.SelectionGrid(_selectionGridInt, _imageList.ToArray(), 1, _options);
+                GUILayout.EndScrollView();
+
+                // Refresh images list.
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("-10% size"))
+                {
+                    ImageZm();
+                }
+                if (GUILayout.Button("Original size"))
+                {
+                    ImageOrig();
+                }
+                if (GUILayout.Button("+10% size"))
+                {
+                    ImageZp();
+                }
+                GUILayout.EndHorizontal();
+            }
             GUI.contentColor = Color.green;
             if (GUILayout.Button("Refresh list"))
             {
@@ -153,6 +178,7 @@ namespace img_viewer
             {
                 _showList = !_showList;
             }
+            if (_imageList == null) return;
             if (_lastimg == _selectionGridInt) return;
             Destroy(_image);
             _imagefile = _imageList[_selectionGridInt];
@@ -164,10 +190,13 @@ namespace img_viewer
 
         private void GetImages()
         {
-            _imageList = new List<string>(Directory.GetFiles(_imagedir, "*"));
-            for (int i = 0; i < _imageList.Count; i++)
+            if (Directory.GetFiles(_imagedir, "*").Any())
             {
-                _imageList[i] = Path.GetFileName(_imageList[i]);
+                _imageList = new List<string>(Directory.GetFiles(_imagedir, "*"));
+                for (int i = 0; i < _imageList.Count; i++)
+                {
+                    _imageList[i] = Path.GetFileName(_imageList[i]);
+                }
             }
         }
 
@@ -281,6 +310,12 @@ namespace img_viewer
             _option4.OnClick += e => ImageNext();
             IButton _option5 = _menu.AddOption("Prev image");
             _option5.OnClick += e => ImagePrev();
+            IButton _option6 = _menu.AddOption("-10% size");
+            _option6.OnClick += e => ImageZm();
+            IButton _option7 = _menu.AddOption("Original");
+            _option7.OnClick += e => ImageOrig();
+            IButton _option8 = _menu.AddOption("+10% size");
+            _option8.OnClick += e => ImageZp();
             // auto-close popup menu when any option is clicked
             _menu.OnAnyOptionClicked += () => destroyPopupMenu(button);
 
@@ -298,6 +333,26 @@ namespace img_viewer
         {
             if (_selectionGridInt == _imageList.Count - 1) return;
             _selectionGridInt++;
+        }
+
+        private void ImageZm()
+        {
+            TextureScale.Bilinear(_image, _image.width - ((_image.width * 10) / 100), _image.height - ((_image.height * 10) / 100));
+            GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
+        }
+
+        private void ImageOrig()
+        {
+            _imagetex = new WWW(_imageurl + _imagefile);
+            _image = _imagetex.texture;
+            _imagetex.Dispose();
+            GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
+        }
+
+        private void ImageZp()
+        {
+            TextureScale.Bilinear(_image, _image.width + ((_image.width * 10) / 100), _image.height + ((_image.height * 10) / 100));
+            GUI.DrawTexture(new Rect(0f, 20f, _image.width, _image.height), _image, ScaleMode.ScaleToFit, true, 0f);
         }
 
         private void destroyPopupMenu(IButton button)
